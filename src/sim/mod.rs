@@ -16,9 +16,9 @@ impl Sim for E12 {
     fn update(cell: &mut Cell, diff: Diff) {}
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Clone, Default)]
 pub struct Cell {
-    brain: Brain,
+    brain: Option<Brain>,
 }
 
 #[derive(Default, Clone, Debug)]
