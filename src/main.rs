@@ -1,6 +1,8 @@
 extern crate arrayfire as af;
 extern crate gridsim as gs;
 extern crate gridsim_ui as ui;
+#[macro_use]
+extern crate enum_iterator_derive;
 
 mod sim;
 
