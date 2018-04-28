@@ -14,7 +14,7 @@ impl Default for Brain {
 }
 
 impl Brain {
-    fn mutate(&mut self, lambda: f32) {
+    pub fn mutate(&mut self, lambda: f32) {
         self.gru.mutate(lambda);
     }
 }
