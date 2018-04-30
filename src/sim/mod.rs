@@ -1,5 +1,8 @@
 mod brain;
 
+use af::{Array, Dim4};
+use noisy_float::prelude::*;
+
 use self::brain::Brain;
 use gs::{neumann::{Direction as Dir, Neighbors},
          Neighborhood,
@@ -12,6 +15,23 @@ const SPAWN_FOOD: usize = 5;
 
 pub enum E12 {}
 
+fn sigmoid(n: usize) -> f32 {
+    (1.0 + (-(n as f32)).exp()).recip()
+}
+
+fn get_choice(a: &Array) -> Option<Dir> {
+    use self::Dir::*;
+    let mut host = [0f32; 4];
+    a.host(&mut host);
+    host.iter()
+        .cloned()
+        .map(n32)
+        .zip(&[Right, Up, Left, Down])
+        .filter(|(v, _)| v.is_sign_positive())
+        .max_by_key(|&(v, _)| v)
+        .map(|(_, &dir)| dir)
+}
+
 impl<'a> Sim<'a> for E12 {
     type Cell = Cell;
     type Diff = Diff;
@@ -21,16 +41,35 @@ impl<'a> Sim<'a> for E12 {
     type MoveNeighbors = Neighbors<Move>;
 
     fn step(cell: &Cell, neighbors: Self::Neighbors) -> (Diff, Self::MoveNeighbors) {
+        use std::iter::once;
         let mut taken = false;
+
+        let choice = cell.brain.as_ref().and_then(|brain| {
+            let inputs = neighbors
+                .iter()
+                .flat_map(|n| {
+                    once(sigmoid(n.food)).chain(once(n.brain.as_ref().map(|_| 1.0).unwrap_or(0.0)))
+                })
+                .collect::<Vec<_>>();
+            // A promise is made here not to look at the brain of any other cell elsewhere.
+            let brain = unsafe { &mut *(brain as *const Brain as *mut Brain) };
+            let outputs = brain.apply(&Array::new(
+                inputs.as_slice(),
+                Dim4::new(&[inputs.len() as u64, 1, 1, 1]),
+            ));
+            get_choice(&outputs)
+        });
+
         let moves = Neighbors::new(|dir| {
-            if dir != Dir::Right || neighbors[dir].brain.is_some() {
-                Move::default()
-            } else {
+            if choice.map(|cd| cd == dir).unwrap_or(false) {
+                // Food is taken with the brain.
                 taken = true;
                 Move {
                     food: cell.food,
                     brain: cell.brain.as_ref().cloned(),
                 }
+            } else {
+                Move::default()
             }
         });
         let diff = Diff {
