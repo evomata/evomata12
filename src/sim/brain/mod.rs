@@ -7,12 +7,14 @@ pub const BRAIN_SIZE: usize = 64;
 #[derive(Clone)]
 pub struct Brain {
     gru: gru::GRU,
+    pub signal: f32,
 }
 
 impl Default for Brain {
     fn default() -> Brain {
         Brain {
-            gru: gru::GRU::new_rand(17, BRAIN_SIZE as u64),
+            gru: gru::GRU::new_rand(1 + 8 + 8 + 8, BRAIN_SIZE as u64),
+            signal: 0.0,
         }
     }
 }

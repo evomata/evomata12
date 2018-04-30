@@ -20,11 +20,11 @@ fn sigmoid(n: usize) -> f32 {
 }
 
 /// The bool is if they want to divide.
-fn get_choice(a: &Array) -> Option<(Dir, bool)> {
+fn get_choice(a: &Array) -> (Option<(Dir, bool)>, f32) {
     use self::Dir::*;
     let mut host = [0f32; BRAIN_SIZE];
     a.host(&mut host);
-    host.iter()
+    let dir_bool = host.iter()
         .take(8)
         .cloned()
         .map(n32)
@@ -40,7 +40,8 @@ fn get_choice(a: &Array) -> Option<(Dir, bool)> {
         ])
         .filter(|(v, _)| v.is_sign_positive())
         .max_by_key(|&(v, _)| v)
-        .map(|(_, &dir)| dir)
+        .map(|(_, &dir)| dir);
+    (dir_bool, host[8])
 }
 
 impl<'a> Sim<'a> for E12 {
@@ -59,7 +60,12 @@ impl<'a> Sim<'a> for E12 {
             let inputs = neighbors
                 .iter()
                 .flat_map(|n| {
-                    once(sigmoid(n.food)).chain(once(n.brain.as_ref().map(|_| 1.0).unwrap_or(0.0)))
+                    once(sigmoid(n.food)).chain(
+                        n.brain
+                            .as_ref()
+                            .map(|b| once(1.0).chain(once(b.signal)))
+                            .unwrap_or_else(|| once(0.0).chain(once(0.0))),
+                    )
                 })
                 .chain(once(sigmoid(cell.food)))
                 .collect::<Vec<_>>();
@@ -69,7 +75,9 @@ impl<'a> Sim<'a> for E12 {
                 inputs.as_slice(),
                 Dim4::new(&[inputs.len() as u64, 1, 1, 1]),
             ));
-            get_choice(&outputs)
+            let (choice, signal) = get_choice(&outputs);
+            brain.signal = signal;
+            choice
         });
 
         let taken_food = choice
