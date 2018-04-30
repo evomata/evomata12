@@ -1,5 +1,7 @@
 mod brain;
 
+use sigmoid;
+
 use af::{Array, Dim4};
 use noisy_float::prelude::*;
 
@@ -14,10 +16,6 @@ const SPAWN_PROBABILITY: f32 = 0.0001;
 pub const SPAWN_FOOD: usize = 256;
 
 pub enum E12 {}
-
-fn sigmoid(n: usize) -> f32 {
-    (1.0 + (-(n as f32)).exp()).recip()
-}
 
 /// The bool is if they want to divide.
 fn get_choice(a: &Array) -> (Option<(Dir, bool)>, f32) {
@@ -60,14 +58,14 @@ impl<'a> Sim<'a> for E12 {
             let inputs = neighbors
                 .iter()
                 .flat_map(|n| {
-                    once(sigmoid(n.food)).chain(
+                    once(sigmoid(n.food as f32)).chain(
                         n.brain
                             .as_ref()
                             .map(|b| once(1.0).chain(once(b.signal)))
                             .unwrap_or_else(|| once(0.0).chain(once(0.0))),
                     )
                 })
-                .chain(once(sigmoid(cell.food)))
+                .chain(once(sigmoid(cell.food as f32)))
                 .collect::<Vec<_>>();
             // A promise is made here not to look at the brain of any other cell elsewhere.
             let brain = unsafe { &mut *(brain as *const Brain as *mut Brain) };
@@ -143,7 +141,7 @@ impl<'a> Sim<'a> for E12 {
 #[derive(Clone, Default)]
 pub struct Cell {
     pub food: usize,
-    brain: Option<Brain>,
+    pub brain: Option<Brain>,
 }
 
 #[derive(Clone, Default)]
