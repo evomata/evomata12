@@ -3,7 +3,7 @@ mod brain;
 use af::{Array, Dim4};
 use noisy_float::prelude::*;
 
-use self::brain::Brain;
+use self::brain::{Brain, BRAIN_SIZE};
 use gs::{neumann::{Direction as Dir, Neighbors},
          Neighborhood,
          Sim};
@@ -11,7 +11,7 @@ use rand::{thread_rng, Rng};
 
 const MUTATE_LAMBDA: f32 = 0.01;
 const SPAWN_PROBABILITY: f32 = 0.0001;
-const SPAWN_FOOD: usize = 5;
+pub const SPAWN_FOOD: usize = 256;
 
 pub enum E12 {}
 
@@ -19,14 +19,25 @@ fn sigmoid(n: usize) -> f32 {
     (1.0 + (-(n as f32)).exp()).recip()
 }
 
-fn get_choice(a: &Array) -> Option<Dir> {
+/// The bool is if they want to divide.
+fn get_choice(a: &Array) -> Option<(Dir, bool)> {
     use self::Dir::*;
-    let mut host = [0f32; 4];
+    let mut host = [0f32; BRAIN_SIZE];
     a.host(&mut host);
     host.iter()
+        .take(8)
         .cloned()
         .map(n32)
-        .zip(&[Right, Up, Left, Down])
+        .zip(&[
+            (Right, false),
+            (Up, false),
+            (Left, false),
+            (Down, false),
+            (Right, true),
+            (Up, true),
+            (Left, true),
+            (Down, true),
+        ])
         .filter(|(v, _)| v.is_sign_positive())
         .max_by_key(|&(v, _)| v)
         .map(|(_, &dir)| dir)
@@ -50,6 +61,7 @@ impl<'a> Sim<'a> for E12 {
                 .flat_map(|n| {
                     once(sigmoid(n.food)).chain(once(n.brain.as_ref().map(|_| 1.0).unwrap_or(0.0)))
                 })
+                .chain(once(sigmoid(cell.food)))
                 .collect::<Vec<_>>();
             // A promise is made here not to look at the brain of any other cell elsewhere.
             let brain = unsafe { &mut *(brain as *const Brain as *mut Brain) };
@@ -60,29 +72,42 @@ impl<'a> Sim<'a> for E12 {
             get_choice(&outputs)
         });
 
-        let moves = Neighbors::new(|dir| {
-            if choice.map(|cd| cd == dir).unwrap_or(false) {
-                // Food is taken with the brain.
-                taken = true;
-                Move {
-                    food: cell.food,
-                    brain: cell.brain.as_ref().cloned(),
+        let taken_food = choice
+            .map(|cd| {
+                if cd.1 {
+                    cell.food / 2
+                } else {
+                    cell.food
                 }
-            } else {
-                Move::default()
-            }
+            })
+            .unwrap_or(0);
+
+        let moves = Neighbors::new(|dir| {
+            choice
+                .and_then(|cd| {
+                    if cd.0 == dir {
+                        // Food is taken with the brain.
+                        taken = !cd.1;
+                        Some(Move {
+                            food: taken_food,
+                            brain: cell.brain.as_ref().cloned(),
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_default()
         });
         let diff = Diff {
-            consume: if taken { cell.food } else { 0 },
+            consume: taken_food,
         };
         (diff, moves)
     }
 
     fn update(cell: &mut Cell, diff: Diff, moves: Self::MoveNeighbors) {
         // Handle food reduction.
-        if diff.consume != 0 {
-            cell.food -= diff.consume;
-        }
+        cell.food = cell.food
+            .saturating_sub(diff.consume + if cell.brain.is_some() { 1 } else { 0 });
         // Handle death.
         if cell.food == 0 {
             cell.brain.take();

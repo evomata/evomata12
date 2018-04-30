@@ -2,6 +2,8 @@ mod gru;
 
 use af::Array;
 
+pub const BRAIN_SIZE: usize = 64;
+
 #[derive(Clone)]
 pub struct Brain {
     gru: gru::GRU,
@@ -10,7 +12,7 @@ pub struct Brain {
 impl Default for Brain {
     fn default() -> Brain {
         Brain {
-            gru: gru::GRU::new_rand(16, 4),
+            gru: gru::GRU::new_rand(17, BRAIN_SIZE as u64),
         }
     }
 }
