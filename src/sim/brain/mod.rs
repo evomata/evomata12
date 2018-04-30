@@ -2,7 +2,7 @@ mod gru;
 
 use af::Array;
 
-pub const BRAIN_SIZE: usize = 64;
+pub const BRAIN_SIZE: usize = 32;
 
 #[derive(Clone)]
 pub struct Brain {

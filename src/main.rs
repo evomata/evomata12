@@ -15,7 +15,7 @@ const MAX_FOOD_DISPLAYED: usize = 4 * sim::SPAWN_FOOD;
 
 fn main() {
     af::set_backend(af::Backend::CPU);
-    ui::run::basic(gs::SquareGrid::<E12>::new(32, 32), |c| {
+    ui::run::basic(gs::SquareGrid::<E12>::new(64, 64), |c| {
         use std::cmp::min;
         let color = min(c.food, MAX_FOOD_DISPLAYED) as f32 / MAX_FOOD_DISPLAYED as f32;
         [color, color, color, 1.0]
