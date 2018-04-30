@@ -1,12 +1,21 @@
+#![feature(plugin)]
+#![plugin(clippy)]
+
 extern crate arrayfire as af;
 extern crate gridsim as gs;
 extern crate gridsim_ui as ui;
-extern crate gridsim_util as gutil;
+extern crate rand;
 
 mod sim;
 
 use sim::E12;
 
+const MAX_FOOD_DISPLAYED: usize = 20;
+
 fn main() {
-    ui::run::basic_par(gs::Grid::<E12>::new(512, 512), |_| [1.0, 1.0, 1.0, 1.0]);
+    ui::run::basic(gs::SquareGrid::<E12>::new(512, 512), |c| {
+        use std::cmp::min;
+        let color = min(c.food, MAX_FOOD_DISPLAYED) as f32 / MAX_FOOD_DISPLAYED as f32;
+        [color, color, color, 1.0]
+    });
 }
