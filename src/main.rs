@@ -11,7 +11,7 @@ use sim::E12;
 use std::f32::consts::PI;
 
 const MAX_FOOD_DISPLAYED: usize = 4 * sim::SPAWN_FOOD;
-const COLOR_CYCLES: f32 = 2.0;
+const COLOR_CYCLES: f32 = 32.0;
 
 pub fn sigmoid(n: f32) -> f32 {
     (1.0 + (-n).exp()).recip()
