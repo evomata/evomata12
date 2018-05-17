@@ -1,30 +1,34 @@
 mod gru;
 
-use af::Array;
+pub use self::gru::{InputVector, OutputVector};
 
-pub const BRAIN_SIZE: usize = 32;
+use na;
+
+pub type OutLen = na::dimension::U64;
+// 1 + 8 + 8 + 8
+pub type InLen = na::dimension::U25;
 
 #[derive(Clone)]
 pub struct Brain {
-    gru: gru::GRU,
+    gru: Box<gru::MGRU>,
     pub signal: f32,
 }
 
 impl Default for Brain {
     fn default() -> Brain {
         Brain {
-            gru: gru::GRU::new_rand(1 + 8 + 8 + 8, BRAIN_SIZE as u64),
+            gru: Box::new(gru::MGRU::new_rand()),
             signal: 0.0,
         }
     }
 }
 
 impl Brain {
-    pub fn mutate(&mut self, lambda: f32) {
+    pub fn mutate(&mut self, lambda: f64) {
         self.gru.mutate(lambda);
     }
 
-    pub fn apply(&mut self, inputs: &Array) -> Array {
+    pub fn apply(&mut self, inputs: &gru::InputVector) -> gru::OutputVector {
         self.gru.apply(inputs)
     }
 }

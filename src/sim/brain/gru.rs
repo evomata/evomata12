@@ -1,116 +1,93 @@
-use af;
-use af::{Array, Dim4, MatProp};
+use super::{InLen, OutLen};
+use na;
+use rand::{self, distributions::Poisson, Rng};
 
-/// Creates a random array with the dimensions and elements in the range [-1, 1].
-fn rand_sig(dims: Dim4) -> Array {
-    af::randu::<f32>(dims) * 2 - 1
-}
+type InputMatrix = na::MatrixMN<f32, OutLen, InLen>;
+type HiddenMatrix = na::MatrixMN<f32, OutLen, OutLen>;
+pub type InputVector = na::MatrixMN<f32, InLen, na::dimension::U1>;
+pub type OutputVector = na::MatrixMN<f32, OutLen, na::dimension::U1>;
 
-/// Mutates all array elements to random values with probability `lambda`.
-fn mutate_rand(array: &mut Array, lambda: f32) {
-    let choices = af::le(&af::randu::<f32>(array.dims()), &lambda, false);
-    *array = af::select(&rand_sig(array.dims()), &choices, array);
+#[inline]
+fn mutate_lambda(slice: &mut [f32], lambda: f64) {
+    let mut rng = rand::thread_rng();
+    let times = rng.sample(Poisson::new(lambda));
+    for _ in 0..times {
+        *rng.choose_mut(slice)
+            .expect("evomata12::sim::brain::gru::mutate_lambda(): mutated empty slice") =
+            rng.gen::<f32>() * 2.0 - 1.0;
+    }
 }
 
 #[derive(Clone)]
-struct GRUTanh {
-    hidden_matrix: Array,
-    input_matrix: Array,
-    biases: Array,
+struct GRUNet {
+    hidden_matrix: HiddenMatrix,
+    input_matrix: InputMatrix,
+    biases: OutputVector,
 }
 
-impl GRUTanh {
-    fn new_random(inputs: u64, outputs: u64) -> GRUTanh {
-        GRUTanh {
-            hidden_matrix: rand_sig(Dim4::new(&[outputs, outputs, 1, 1])),
-            input_matrix: rand_sig(Dim4::new(&[outputs, inputs, 1, 1])),
-            biases: rand_sig(Dim4::new(&[outputs, 1, 1, 1])),
+impl GRUNet {
+    fn new_random() -> GRUNet {
+        GRUNet {
+            hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
+            input_matrix: InputMatrix::new_random().map(|n| n * 2.0 - 1.0),
+            biases: OutputVector::new_random().map(|n| n * 2.0 - 1.0),
         }
     }
 
-    fn apply(&self, hiddens: &Array, inputs: &Array) -> Array {
-        af::tanh(
-            &(&af::matmul(&self.hidden_matrix, hiddens, MatProp::NONE, MatProp::NONE)
-                + &af::matmul(&self.input_matrix, inputs, MatProp::NONE, MatProp::NONE)
-                + &self.biases),
-        )
+    fn apply_linear(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
+        &self.hidden_matrix * hiddens + &self.input_matrix * inputs + &self.biases
+    }
+
+    fn apply_tanh(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
+        self.apply_linear(hiddens, inputs).map(f32::tanh)
+    }
+
+    fn apply_sigmoid(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
+        self.apply_linear(hiddens, inputs)
+            .map(|n| (1.0 + (-n).ln()).recip())
     }
 
     /// Mutate each matrix element with a probability lambda
-    fn mutate(&mut self, lambda: f32) {
-        mutate_rand(&mut self.hidden_matrix, lambda);
-        mutate_rand(&mut self.input_matrix, lambda);
-        mutate_rand(&mut self.biases, lambda);
+    fn mutate(&mut self, lambda: f64) {
+        mutate_lambda(self.hidden_matrix.as_mut_slice(), lambda);
+        mutate_lambda(self.input_matrix.as_mut_slice(), lambda);
+        mutate_lambda(self.biases.as_mut_slice(), lambda);
     }
 }
 
+/// A Minimal Gated Recurrent Unit
 #[derive(Clone)]
-struct GRUGate {
-    hidden_matrix: Array,
-    input_matrix: Array,
-    biases: Array,
+pub struct MGRU {
+    forget_gate: GRUNet,
+    output_gate: GRUNet,
+    hiddens: OutputVector,
 }
 
-impl GRUGate {
-    fn new_random(inputs: u64, outputs: u64) -> GRUGate {
-        GRUGate {
-            hidden_matrix: rand_sig(Dim4::new(&[outputs, outputs, 1, 1])),
-            input_matrix: rand_sig(Dim4::new(&[outputs, inputs, 1, 1])),
-            biases: rand_sig(Dim4::new(&[outputs, 1, 1, 1])),
+impl MGRU {
+    pub fn new_rand() -> MGRU {
+        MGRU {
+            forget_gate: GRUNet::new_random(),
+            output_gate: GRUNet::new_random(),
+            hiddens: OutputVector::new_random(),
         }
     }
 
-    fn apply(&self, hiddens: &Array, inputs: &Array) -> Array {
-        af::sigmoid(
-            &(&af::matmul(&self.hidden_matrix, hiddens, MatProp::NONE, MatProp::NONE)
-                + &af::matmul(&self.input_matrix, inputs, MatProp::NONE, MatProp::NONE)
-                + &self.biases),
-        )
+    pub fn apply(&mut self, inputs: &InputVector) -> OutputVector {
+        // Compute forget coefficients.
+        let f = self.forget_gate.apply_sigmoid(&self.hiddens, inputs);
+
+        let remebered = f.zip_map(&self.hiddens, |f, h| f * h);
+
+        self.hiddens = remebered
+            + f.zip_map(&self.output_gate.apply_tanh(&remebered, inputs), |f, o| {
+                (1.0 - f) * o
+            });
+
+        self.hiddens
     }
 
-    /// Mutate each matrix element with a probability lambda
-    fn mutate(&mut self, lambda: f32) {
-        mutate_rand(&mut self.hidden_matrix, lambda);
-        mutate_rand(&mut self.input_matrix, lambda);
-        mutate_rand(&mut self.biases, lambda);
-    }
-}
-
-#[derive(Clone)]
-pub struct GRU {
-    reset_gate: GRUGate,
-    update_gate: GRUGate,
-    output_layer: GRUTanh,
-    hiddens: Array,
-}
-
-impl GRU {
-    pub fn new_rand(inputs: u64, outputs: u64) -> GRU {
-        GRU {
-            reset_gate: GRUGate::new_random(inputs, outputs),
-            update_gate: GRUGate::new_random(inputs, outputs),
-            output_layer: GRUTanh::new_random(inputs, outputs),
-            hiddens: af::randu::<f32>(Dim4::new(&[outputs, 1, 1, 1])),
-        }
-    }
-
-    pub fn apply(&mut self, inputs: &Array) -> Array {
-        // Compute reset coefficients.
-        let r = self.reset_gate.apply(&self.hiddens, inputs);
-        // Compute update coefficients.
-        let z = self.update_gate.apply(&self.hiddens, inputs);
-
-        let outputs: Array = (-z.clone() + 1)
-            * self.output_layer.apply(&(r * &self.hiddens), inputs)
-            + z * &self.hiddens;
-
-        self.hiddens = outputs.clone();
-        outputs
-    }
-
-    pub fn mutate(&mut self, lambda: f32) {
-        self.reset_gate.mutate(lambda);
-        self.update_gate.mutate(lambda);
-        self.output_layer.mutate(lambda);
+    pub fn mutate(&mut self, lambda: f64) {
+        self.forget_gate.mutate(lambda);
+        self.output_gate.mutate(lambda);
     }
 }

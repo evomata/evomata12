@@ -2,27 +2,25 @@ mod brain;
 
 use sigmoid;
 
-use af::{Array, Dim4};
 use noisy_float::prelude::*;
 
-use self::brain::{Brain, BRAIN_SIZE};
-use gs::{neumann::{Direction as Dir, Neighbors},
-         Neighborhood,
-         Sim};
-use rand::{thread_rng, Rng};
+use self::brain::Brain;
+use gs::{
+    neumann::{Direction as Dir, Neighbors}, Neighborhood, Sim,
+};
+use rand::random;
 
-const MUTATE_LAMBDA: f32 = 0.01;
+const MUTATE_LAMBDA: f64 = 0.01;
 const SPAWN_PROBABILITY: f32 = 0.0001;
 pub const SPAWN_FOOD: usize = 256;
 
 pub enum E12 {}
 
 /// The bool is if they want to divide.
-fn get_choice(a: &Array) -> (Option<(Dir, bool)>, f32) {
+fn get_choice(a: &brain::OutputVector) -> (Option<(Dir, bool)>, f32) {
     use self::Dir::*;
-    let mut host = [0f32; BRAIN_SIZE];
-    a.host(&mut host);
-    let dir_bool = host.iter()
+    let dir_bool = a.as_slice()
+        .iter()
         .take(8)
         .cloned()
         .map(n32)
@@ -39,7 +37,7 @@ fn get_choice(a: &Array) -> (Option<(Dir, bool)>, f32) {
         .filter(|(v, _)| v.is_sign_positive())
         .max_by_key(|&(v, _)| v)
         .map(|(_, &dir)| dir);
-    (dir_bool, host[8])
+    (dir_bool, a[8])
 }
 
 impl<'a> Sim<'a> for E12 {
@@ -55,25 +53,24 @@ impl<'a> Sim<'a> for E12 {
         let mut taken = false;
 
         let choice = cell.brain.as_ref().and_then(|brain| {
-            let inputs = neighbors
-                .iter()
-                .flat_map(|n| {
-                    once(sigmoid(n.food as f32)).chain(
-                        n.brain
-                            .as_ref()
-                            .map(|b| once(1.0).chain(once(b.signal)))
-                            .unwrap_or_else(|| once(0.0).chain(once(0.0))),
-                    )
-                })
-                .chain(once(sigmoid(cell.food as f32)))
-                .collect::<Vec<_>>();
+            let inputs = brain::InputVector::from_iterator(
+                neighbors
+                    .iter()
+                    .flat_map(|n| {
+                        once(sigmoid(n.food as f32)).chain(
+                            n.brain
+                                .as_ref()
+                                .map(|b| once(1.0).chain(once(b.signal)))
+                                .unwrap_or_else(|| once(0.0).chain(once(0.0))),
+                        )
+                    })
+                    .chain(once(sigmoid(cell.food as f32))),
+            );
             // A promise is made here not to look at the brain of any other cell elsewhere.
             let brain = unsafe { &mut *(brain as *const Brain as *mut Brain) };
-            let outputs = brain.apply(&Array::new(
-                inputs.as_slice(),
-                Dim4::new(&[inputs.len() as u64, 1, 1, 1]),
-            ));
+            let outputs = brain.apply(&inputs);
             let (choice, signal) = get_choice(&outputs);
+            // TODO: This is bad; do this in update.
             brain.signal = signal;
             choice
         });
@@ -131,7 +128,7 @@ impl<'a> Sim<'a> for E12 {
         // Handle food movement.
         cell.food += moves.iter().map(|m| m.food).sum::<usize>();
 
-        if cell.brain.is_none() && thread_rng().next_f32() < SPAWN_PROBABILITY {
+        if cell.brain.is_none() && random::<f32>() < SPAWN_PROBABILITY {
             cell.brain = Some(Brain::default());
             cell.food += SPAWN_FOOD;
         }

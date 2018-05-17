@@ -1,9 +1,6 @@
-#![feature(plugin)]
-#![plugin(clippy)]
-
-extern crate arrayfire as af;
 extern crate gridsim as gs;
 extern crate gridsim_ui as ui;
+extern crate nalgebra as na;
 extern crate noisy_float;
 extern crate rand;
 
@@ -33,7 +30,6 @@ fn rgb(n: f32) -> (f32, f32, f32) {
 }
 
 fn main() {
-    af::set_backend(af::Backend::CPU);
     ui::run::basic(gs::SquareGrid::<E12>::new(64, 64), |c| {
         use std::cmp::min;
         let intensity = min(c.food, MAX_FOOD_DISPLAYED) as f32 / MAX_FOOD_DISPLAYED as f32;
