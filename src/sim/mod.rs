@@ -11,7 +11,7 @@ use gs::{
 use rand::random;
 
 const MUTATE_LAMBDA: f64 = 0.01;
-const SPAWN_PROBABILITY: f32 = 0.0001;
+const SPAWN_PROBABILITY: f32 = 0.0003;
 pub const SPAWN_FOOD: usize = 256;
 
 pub enum E12 {}
@@ -37,6 +37,7 @@ fn get_choice(a: &brain::OutputVector) -> (Option<(Dir, bool)>, f32) {
         .filter(|(v, _)| v.is_sign_positive())
         .max_by_key(|&(v, _)| v)
         .map(|(_, &dir)| dir);
+
     (dir_bool, a[8])
 }
 

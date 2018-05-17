@@ -44,7 +44,7 @@ impl GRUNet {
 
     fn apply_sigmoid(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
         self.apply_linear(hiddens, inputs)
-            .map(|n| (1.0 + (-n).ln()).recip())
+            .map(|n| (1.0 + (-n).exp()).recip())
     }
 
     /// Mutate each matrix element with a probability lambda
