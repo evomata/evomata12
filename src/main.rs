@@ -30,7 +30,7 @@ fn rgb(n: f32) -> (f32, f32, f32) {
 }
 
 fn main() {
-    ui::run::basic(gs::SquareGrid::<E12>::new(256, 256), |c| {
+    ui::run::basic(gs::SquareGrid::<E12>::new(426, 240), |c| {
         use std::cmp::min;
         let intensity =
             0.005f32.max(min(c.food, MAX_FOOD_DISPLAYED) as f32 / MAX_FOOD_DISPLAYED as f32);
