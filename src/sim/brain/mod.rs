@@ -4,7 +4,7 @@ pub use self::gru::{InputVector, OutputVector};
 
 use na;
 
-pub type OutLen = na::dimension::U64;
+pub type OutLen = na::dimension::U24;
 // 1 + 8 + 8 + 8
 pub type InLen = na::dimension::U25;
 

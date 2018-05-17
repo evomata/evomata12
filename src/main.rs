@@ -32,8 +32,12 @@ fn rgb(n: f32) -> (f32, f32, f32) {
 fn main() {
     ui::run::basic(gs::SquareGrid::<E12>::new(256, 256), |c| {
         use std::cmp::min;
-        let intensity = min(c.food, MAX_FOOD_DISPLAYED) as f32 / MAX_FOOD_DISPLAYED as f32;
-        let hue = rgb(c.brain.as_ref().map(|b| b.signal).unwrap_or(0.0));
+        let intensity =
+            0.005f32.max(min(c.food, MAX_FOOD_DISPLAYED) as f32 / MAX_FOOD_DISPLAYED as f32);
+        let hue = c.brain
+            .as_ref()
+            .map(|b| rgb(b.signal))
+            .unwrap_or((0.0, 0.0, 0.0));
         [hue.0 * intensity, hue.1 * intensity, hue.2 * intensity, 1.0]
     });
 }
