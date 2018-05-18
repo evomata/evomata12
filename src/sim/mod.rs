@@ -12,7 +12,7 @@ use gs::{
 };
 use rand::random;
 
-const MUTATE_LAMBDA: f64 = 0.0001;
+const MUTATE_LAMBDA: f64 = 0.00001;
 pub const SPAWN_FOOD: usize = 512;
 const FOOD_RATE_FACTOR: f32 = 5.0;
 const SPAWN_PROBABILITY: f32 = FOOD_RATE_FACTOR / SPAWN_FOOD as f32;

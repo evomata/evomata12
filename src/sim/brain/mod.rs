@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use na;
 
-pub type OutLen = na::dimension::U24;
+pub type OutLen = na::dimension::U16;
 // 1 + 8 + 8 + 8
 pub type InLen = na::dimension::U25;
 

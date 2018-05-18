@@ -12,15 +12,16 @@ use sim::E12;
 use std::f32::consts::PI;
 
 const MAX_FOOD_DISPLAYED: usize = 256;
-const COLOR_CYCLES: f32 = 64.0;
+const COLOR_CYCLES: f32 = 3.0;
+const COLOR_SHIFT: f32 = PI + 0.8;
 
 //const DIMS: (usize, usize) = (256, 144);
 const DIMS: (usize, usize) = (426, 240);
 //const DIMS: (usize, usize) = (640, 360);
 
 fn rgb(n: f32) -> (f32, f32, f32) {
-    let n = n / 2.0 + 0.5;
-    let angle = n * COLOR_CYCLES * PI;
+    let n = n * 0.5 + 0.5;
+    let angle = n * COLOR_CYCLES * PI + COLOR_SHIFT;
     let ratio = 3.0 * PI / 4.0;
     let colorsin = |a: f32| a.sin() * 0.5 + 0.5;
     (
