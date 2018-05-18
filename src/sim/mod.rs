@@ -7,14 +7,14 @@ pub fn sigmoid(n: f32) -> f32 {
 use noisy_float::prelude::*;
 
 use self::brain::Brain;
-use gs::{neumann::{Direction as Dir, Neighbors},
-         Neighborhood,
-         Sim};
+use gs::{
+    neumann::{Direction as Dir, Neighbors}, Neighborhood, Sim,
+};
 use rand::random;
 
 const MUTATE_LAMBDA: f64 = 0.01;
-pub const SPAWN_FOOD: usize = 2048;
-const FOOD_RATE_FACTOR: f32 = 0.02;
+pub const SPAWN_FOOD: usize = 512;
+const FOOD_RATE_FACTOR: f32 = 5.0;
 const SPAWN_PROBABILITY: f32 = FOOD_RATE_FACTOR / SPAWN_FOOD as f32;
 
 pub enum E12 {}
@@ -107,22 +107,20 @@ impl<'a> Sim<'a> for E12 {
         });
         let diff = Diff {
             consume: taken_food,
+            moved: taken,
         };
         (diff, moves)
     }
 
     fn update(cell: &mut Cell, diff: Diff, moves: Self::MoveNeighbors) {
-        // Handle food reduction.
-        cell.food = cell.food
-            .saturating_sub(diff.consume + if cell.brain.is_some() { 1 } else { 0 });
-        // Handle death.
-        if cell.food == 0 {
+        // Handle food reduction from diff.
+        cell.food = cell.food.saturating_sub(diff.consume);
+
+        // Handle taking the brain.
+        if diff.moved {
             cell.brain.take();
         }
-        // Handle mutation.
-        if let Some(ref mut brain) = cell.brain {
-            brain.mutate(MUTATE_LAMBDA);
-        }
+
         // Handle brain movement.
         let mut brain_moves = moves.clone().iter().filter(|m| m.brain.is_some());
         if brain_moves.clone().count() == 1 {
@@ -132,6 +130,20 @@ impl<'a> Sim<'a> for E12 {
         // Handle food movement.
         cell.food += moves.iter().map(|m| m.food).sum::<usize>();
 
+        // Handle food reduction from existing.
+        cell.food = cell.food.saturating_sub(1);
+
+        // Handle death.
+        if cell.food == 0 {
+            cell.brain.take();
+        }
+
+        // Handle mutation.
+        if let Some(ref mut brain) = cell.brain {
+            brain.mutate(MUTATE_LAMBDA);
+        }
+
+        // Handle spawning.
         if cell.brain.is_none() && random::<f32>() < SPAWN_PROBABILITY {
             cell.brain = Some(Brain::default());
             cell.food += SPAWN_FOOD;
@@ -154,4 +166,5 @@ pub struct Move {
 #[derive(Default, Clone, Debug)]
 pub struct Diff {
     consume: usize,
+    moved: bool,
 }

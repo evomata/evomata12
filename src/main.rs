@@ -10,7 +10,7 @@ use sim::E12;
 
 use std::f32::consts::PI;
 
-const MAX_FOOD_DISPLAYED: usize = sim::SPAWN_FOOD / 64;
+const MAX_FOOD_DISPLAYED: usize = 256;
 const COLOR_CYCLES: f32 = 64.0;
 
 fn rgb(n: f32) -> (f32, f32, f32) {
@@ -29,8 +29,7 @@ fn main() {
     ui::run::basic(gs::SquareGrid::<E12>::new(256, 144), |c| {
         use std::cmp::min;
         let intensity =
-            0.015f32.max(min(c.food, MAX_FOOD_DISPLAYED) as f32 / 
-MAX_FOOD_DISPLAYED as f32);
+            0.015f32.max(min(c.food, MAX_FOOD_DISPLAYED) as f32 / MAX_FOOD_DISPLAYED as f32);
         let hue = c.brain
             .as_ref()
             .map(|b| rgb(b.signal))
