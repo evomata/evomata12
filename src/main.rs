@@ -14,6 +14,10 @@ use std::f32::consts::PI;
 const MAX_FOOD_DISPLAYED: usize = 256;
 const COLOR_CYCLES: f32 = 64.0;
 
+//const DIMS: (usize, usize) = (256, 144);
+const DIMS: (usize, usize) = (426, 240);
+//const DIMS: (usize, usize) = (640, 360);
+
 fn rgb(n: f32) -> (f32, f32, f32) {
     let n = n / 2.0 + 0.5;
     let angle = n * COLOR_CYCLES * PI;
@@ -27,7 +31,7 @@ fn rgb(n: f32) -> (f32, f32, f32) {
 }
 
 fn main() {
-    ui::run::basic(gs::SquareGrid::<E12>::new(256, 144), |c| {
+    ui::run::basic(gs::SquareGrid::<E12>::new(DIMS.0, DIMS.1), |c| {
         use std::cmp::min;
         let intensity =
             0.015f32.max(min(c.food, MAX_FOOD_DISPLAYED) as f32 / MAX_FOOD_DISPLAYED as f32);
