@@ -56,7 +56,7 @@ impl<'a> Sim<'a> for E12 {
         use std::iter::once;
         let mut taken = false;
 
-        let choice = cell.brain.as_ref().and_then(|brain| {
+        let choices = cell.brain.as_ref().map(|brain| {
             let inputs = brain::InputVector::from_iterator(
                 neighbors
                     .iter()
@@ -73,11 +73,11 @@ impl<'a> Sim<'a> for E12 {
             // A promise is made here not to look at the brain of any other cell elsewhere.
             let brain = unsafe { &mut *(brain as *const Brain as *mut Brain) };
             let outputs = brain.apply(&inputs);
-            let (choice, signal) = get_choice(&outputs);
-            // TODO: This is bad; do this in update.
-            brain.signal = signal;
-            choice
+            get_choice(&outputs)
         });
+
+        let choice = choices.and_then(|t| t.0);
+        let signal = choices.map(|t| t.1);
 
         let taken_food = choice
             .map(|cd| {
@@ -98,6 +98,8 @@ impl<'a> Sim<'a> for E12 {
                         Some(Move {
                             food: taken_food,
                             brain: cell.brain.as_ref().cloned(),
+                            signal: signal
+                                .expect("evomata12::sim::step(): moved but no signal present"),
                         })
                     } else {
                         None
@@ -108,6 +110,7 @@ impl<'a> Sim<'a> for E12 {
         let diff = Diff {
             consume: taken_food,
             moved: taken,
+            signal: signal,
         };
         (diff, moves)
     }
@@ -121,10 +124,19 @@ impl<'a> Sim<'a> for E12 {
             cell.brain.take();
         }
 
+        // Handle signal for still cells (from diff).
+        if let Some(signal) = diff.signal {
+            if let Some(ref mut brain) = cell.brain {
+                brain.signal = signal;
+            }
+        }
+
         // Handle brain movement.
         let mut brain_moves = moves.clone().iter().filter(|m| m.brain.is_some());
         if brain_moves.clone().count() == 1 {
-            cell.brain = brain_moves.next().unwrap().brain;
+            let m = brain_moves.next().unwrap();
+            cell.brain = m.brain;
+            cell.brain.as_mut().unwrap().signal = m.signal;
         }
 
         // Handle food movement.
@@ -161,10 +173,12 @@ pub struct Cell {
 pub struct Move {
     food: usize,
     brain: Option<Brain>,
+    signal: f32,
 }
 
 #[derive(Default, Clone, Debug)]
 pub struct Diff {
     consume: usize,
     moved: bool,
+    signal: Option<f32>,
 }
