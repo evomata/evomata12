@@ -1,3 +1,4 @@
+extern crate boolinator;
 extern crate gridsim as gs;
 extern crate gridsim_ui as ui;
 extern crate nalgebra as na;

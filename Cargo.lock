@@ -63,6 +63,11 @@ version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "boolinator"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "cc"
 version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -257,6 +262,7 @@ dependencies = [
 name = "evomata12"
 version = "0.1.0"
 dependencies = [
+ "boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gridsim 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gridsim-ui 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.14.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -996,6 +1002,7 @@ dependencies = [
 "checksum bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4efd02e230a02e18f92fc2735f44597385ed02ad8f831e7c1c1156ee5e1ab3a5"
 "checksum bitflags 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1b2bf7093258c32e0825b635948de528a5949799dcd61bef39534c8aab95870c"
 "checksum block 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
+"checksum boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "cfa8873f51c92e232f9bac4065cddef41b714152812bfc5f7672ba16d6ef8cd9"
 "checksum cc 1.0.13 (registry+https://github.com/rust-lang/crates.io-index)" = "38fb45eeb2c9216a6700cf675b418d6c26ee15b55a3700970112da9fedfb8694"
 "checksum cfg-if 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d4c819a1287eb618df47cc647173c5c4c66ba19d888a6e50d605672aed3140de"
 "checksum cgl 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "86765cb42c2a2c497e142af72517c1b4d7ae5bb2f25dfa77a5c69642f2342d89"

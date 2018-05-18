@@ -1,4 +1,5 @@
 use super::{InLen, OutLen};
+use boolinator::Boolinator;
 use na;
 use rand::{self, distributions::Poisson, Rng};
 
@@ -8,7 +9,7 @@ pub type InputVector = na::MatrixMN<f32, InLen, na::dimension::U1>;
 pub type OutputVector = na::MatrixMN<f32, OutLen, na::dimension::U1>;
 
 #[inline]
-fn mutate_lambda(slice: &mut [f32], lambda: f64) {
+fn mutate_lambda(slice: &mut [f32], lambda: f64) -> bool {
     let mut rng = rand::thread_rng();
     let times = rng.sample(Poisson::new(lambda));
     for _ in 0..times {
@@ -16,6 +17,7 @@ fn mutate_lambda(slice: &mut [f32], lambda: f64) {
             .expect("evomata12::sim::brain::gru::mutate_lambda(): mutated empty slice") =
             rng.gen::<f32>() * 2.0 - 1.0;
     }
+    times != 0
 }
 
 #[derive(Clone)]
@@ -34,24 +36,28 @@ impl GRUNet {
         }
     }
 
+    #[inline]
     fn apply_linear(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
         &self.hidden_matrix * hiddens + &self.input_matrix * inputs + &self.biases
     }
 
+    #[inline]
     fn apply_tanh(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
         self.apply_linear(hiddens, inputs).map(f32::tanh)
     }
 
+    #[inline]
     fn apply_sigmoid(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
         self.apply_linear(hiddens, inputs)
             .map(|n| (1.0 + (-n).exp()).recip())
     }
 
     /// Mutate each matrix element with a probability lambda
-    fn mutate(&mut self, lambda: f64) {
-        mutate_lambda(self.hidden_matrix.as_mut_slice(), lambda);
-        mutate_lambda(self.input_matrix.as_mut_slice(), lambda);
-        mutate_lambda(self.biases.as_mut_slice(), lambda);
+    #[inline]
+    fn mutate(&mut self, lambda: f64) -> bool {
+        mutate_lambda(self.hidden_matrix.as_mut_slice(), lambda)
+            | mutate_lambda(self.input_matrix.as_mut_slice(), lambda)
+            | mutate_lambda(self.biases.as_mut_slice(), lambda)
     }
 }
 
@@ -72,22 +78,20 @@ impl MGRU {
         }
     }
 
-    pub fn apply(&mut self, inputs: &InputVector) -> OutputVector {
+    pub fn apply(&self, inputs: &InputVector, hiddens: &OutputVector) -> OutputVector {
         // Compute forget coefficients.
-        let f = self.forget_gate.apply_sigmoid(&self.hiddens, inputs);
+        let f = self.forget_gate.apply_sigmoid(hiddens, inputs);
 
-        let remebered = f.zip_map(&self.hiddens, |f, h| f * h);
+        let remebered = f.zip_map(hiddens, |f, h| f * h);
 
-        self.hiddens = remebered
-            + f.zip_map(&self.output_gate.apply_tanh(&remebered, inputs), |f, o| {
-                (1.0 - f) * o
-            });
-
-        self.hiddens
+        remebered + f.zip_map(&self.output_gate.apply_tanh(&remebered, inputs), |f, o| {
+            (1.0 - f) * o
+        })
     }
 
-    pub fn mutate(&mut self, lambda: f64) {
-        self.forget_gate.mutate(lambda);
-        self.output_gate.mutate(lambda);
+    pub fn mutated(&self, lambda: f64) -> Option<Self> {
+        let mut new = self.clone();
+        let changed = new.forget_gate.mutate(lambda) | new.output_gate.mutate(lambda);
+        changed.as_some(new)
     }
 }
