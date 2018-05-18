@@ -13,8 +13,8 @@ use gs::{neumann::{Direction as Dir, Neighbors},
 use rand::random;
 
 const MUTATE_LAMBDA: f64 = 0.01;
-pub const SPAWN_FOOD: usize = 1024;
-const FOOD_RATE_FACTOR: f32 = 0.0005;
+pub const SPAWN_FOOD: usize = 2048;
+const FOOD_RATE_FACTOR: f32 = 0.02;
 const SPAWN_PROBABILITY: f32 = FOOD_RATE_FACTOR / SPAWN_FOOD as f32;
 
 pub enum E12 {}
