@@ -1,3 +1,4 @@
+extern crate array_init;
 extern crate boolinator;
 extern crate gridsim as gs;
 extern crate gridsim_ui as ui;
@@ -18,6 +19,11 @@ const COLOR_SHIFT: f32 = PI + 0.8;
 //const DIMS: (usize, usize) = (256, 144);
 const DIMS: (usize, usize) = (426, 240);
 //const DIMS: (usize, usize) = (640, 360);
+//const DIMS: (usize, usize) = (768, 432);
+//const DIMS: (usize, usize) = (800, 450);
+//const DIMS: (usize, usize) = (896, 504);
+//const DIMS: (usize, usize) = (960, 540);
+//const DIMS: (usize, usize) = (1280, 720);
 
 fn rgb(n: f32) -> (f32, f32, f32) {
     let n = n * 0.5 + 0.5;
