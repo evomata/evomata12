@@ -12,12 +12,12 @@ use sim::E12;
 
 use std::f32::consts::PI;
 
-const MAX_FOOD_DISPLAYED: usize = 256;
+const MAX_FOOD_DISPLAYED: usize = 512;
 const COLOR_CYCLES: f32 = 3.0;
 const COLOR_SHIFT: f32 = PI + 0.8;
 
-//const DIMS: (usize, usize) = (256, 144);
-const DIMS: (usize, usize) = (426, 240);
+const DIMS: (usize, usize) = (256, 144);
+//const DIMS: (usize, usize) = (426, 240);
 //const DIMS: (usize, usize) = (640, 360);
 //const DIMS: (usize, usize) = (768, 432);
 //const DIMS: (usize, usize) = (800, 450);

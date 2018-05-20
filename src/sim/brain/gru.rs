@@ -2,6 +2,7 @@ use super::{InLen, OutLen};
 use boolinator::Boolinator;
 use na;
 use rand::{self, distributions::Poisson, Rng};
+use sim::sigmoid;
 
 type InputMatrix = na::MatrixMN<f32, OutLen, InLen>;
 type HiddenMatrix = na::MatrixMN<f32, OutLen, OutLen>;
@@ -48,8 +49,13 @@ impl GRUNet {
 
     #[inline]
     fn apply_sigmoid(&self, hiddens: &OutputVector, inputs: &OutputVector) -> OutputVector {
+        self.apply_linear(hiddens, inputs).map(sigmoid)
+    }
+
+    #[inline]
+    fn apply_sigmoid_out(&self, hiddens: &OutputVector, inputs: &OutputVector) -> OutputVector {
         self.apply_linear(hiddens, inputs)
-            .map(|n| (1.0 + (-n).exp()).recip())
+            .map(|n| sigmoid(n) * 2.0 - 1.0)
     }
 
     /// Mutate each matrix element with a probability lambda
@@ -89,8 +95,13 @@ impl GRUNetInput {
 
     #[inline]
     fn apply_sigmoid(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
+        self.apply_linear(hiddens, inputs).map(sigmoid)
+    }
+
+    #[inline]
+    fn apply_sigmoid_out(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
         self.apply_linear(hiddens, inputs)
-            .map(|n| (1.0 + (-n).exp()).recip())
+            .map(|n| sigmoid(n) * 2.0 - 1.0)
     }
 
     /// Mutate each matrix element with a probability lambda
@@ -125,11 +136,9 @@ impl MGRUInput {
 
         let remebered = f.zip_map(hiddens, |f, h| f * h);
 
-        remebered
-            + f.zip_map(
-                &self.output_gate.apply_sigmoid(&remebered, inputs),
-                |f, o| (1.0 - f) * o,
-            )
+        remebered + f.zip_map(&self.output_gate.apply_tanh(&remebered, inputs), |f, o| {
+            (1.0 - f) * o
+        })
     }
 
     pub fn mutated(&self, lambda: f64) -> Option<Self> {
@@ -162,11 +171,9 @@ impl MGRU {
 
         let remebered = f.zip_map(hiddens, |f, h| f * h);
 
-        remebered
-            + f.zip_map(
-                &self.output_gate.apply_sigmoid(&remebered, inputs),
-                |f, o| (1.0 - f) * o,
-            )
+        remebered + f.zip_map(&self.output_gate.apply_tanh(&remebered, inputs), |f, o| {
+            (1.0 - f) * o
+        })
     }
 
     pub fn mutated(&self, lambda: f64) -> Option<Self> {
