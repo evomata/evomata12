@@ -52,12 +52,6 @@ impl GRUNet {
         self.apply_linear(hiddens, inputs).map(sigmoid)
     }
 
-    #[inline]
-    fn apply_sigmoid_out(&self, hiddens: &OutputVector, inputs: &OutputVector) -> OutputVector {
-        self.apply_linear(hiddens, inputs)
-            .map(|n| sigmoid(n) * 2.0 - 1.0)
-    }
-
     /// Mutate each matrix element with a probability lambda
     #[inline]
     fn mutate(&mut self, lambda: f64) -> bool {
@@ -96,12 +90,6 @@ impl GRUNetInput {
     #[inline]
     fn apply_sigmoid(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
         self.apply_linear(hiddens, inputs).map(sigmoid)
-    }
-
-    #[inline]
-    fn apply_sigmoid_out(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
-        self.apply_linear(hiddens, inputs)
-            .map(|n| sigmoid(n) * 2.0 - 1.0)
     }
 
     /// Mutate each matrix element with a probability lambda
