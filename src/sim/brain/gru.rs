@@ -21,7 +21,7 @@ fn mutate_lambda(slice: &mut [f32], lambda: f64) -> bool {
     times != 0
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct GRUNet {
     hidden_matrix: HiddenMatrix,
     input_matrix: HiddenMatrix,
@@ -61,7 +61,7 @@ impl GRUNet {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct GRUNetInput {
     hidden_matrix: HiddenMatrix,
     input_matrix: InputMatrix,
@@ -102,7 +102,7 @@ impl GRUNetInput {
 }
 
 /// A Minimal Gated Recurrent Unit
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MGRUInput {
     forget_gate: GRUNetInput,
     output_gate: GRUNetInput,
@@ -137,7 +137,7 @@ impl MGRUInput {
 }
 
 /// A Minimal Gated Recurrent Unit
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MGRU {
     forget_gate: GRUNet,
     output_gate: GRUNet,

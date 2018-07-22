@@ -8,7 +8,8 @@ use noisy_float::prelude::*;
 
 use self::brain::Brain;
 use gs::{
-    neumann::{Direction as Dir, Neighbors}, Neighborhood, Sim,
+    neumann::{Direction as Dir, Neighbors},
+    Neighborhood, Sim,
 };
 use rand::random;
 
@@ -22,7 +23,8 @@ pub enum E12 {}
 /// The bool is if they want to divide.
 fn get_choice(a: &brain::OutputVector) -> (Option<(Dir, bool)>, f32) {
     use self::Dir::*;
-    let dir_bool = a.as_slice()
+    let dir_bool = a
+        .as_slice()
         .iter()
         .take(8)
         .cloned()
@@ -163,7 +165,7 @@ impl<'a> Sim<'a> for E12 {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct Cell {
     pub food: usize,
     pub brain: Option<Brain>,
